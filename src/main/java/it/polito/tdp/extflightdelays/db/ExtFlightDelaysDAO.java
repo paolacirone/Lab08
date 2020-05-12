@@ -7,10 +7,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.extflightdelays.model.Airline;
 import it.polito.tdp.extflightdelays.model.Airport;
 import it.polito.tdp.extflightdelays.model.Flight;
+import it.polito.tdp.extflightdelays.model.Rotta;
 
 public class ExtFlightDelaysDAO {
 
@@ -37,7 +39,8 @@ public class ExtFlightDelaysDAO {
 		}
 	}
 
-	public List<Airport> loadAllAirports() {
+	//public void loadAllAirports(Map<Integer, Airport> idMap) {
+	public List<Airport> loadAllAirports(){	
 		String sql = "SELECT * FROM airports";
 		List<Airport> result = new ArrayList<Airport>();
 
@@ -47,10 +50,13 @@ public class ExtFlightDelaysDAO {
 			ResultSet rs = st.executeQuery();
 
 			while (rs.next()) {
+				//if(!idMap.containsKey(rs.getInt("ID"))) {
 				Airport airport = new Airport(rs.getInt("ID"), rs.getString("IATA_CODE"), rs.getString("AIRPORT"),
 						rs.getString("CITY"), rs.getString("STATE"), rs.getString("COUNTRY"), rs.getDouble("LATITUDE"),
 						rs.getDouble("LONGITUDE"), rs.getDouble("TIMEZONE_OFFSET"));
+				//idMap.put(airport.getId(), airport);
 				result.add(airport);
+				//}
 			}
 
 			conn.close();
@@ -91,4 +97,39 @@ public class ExtFlightDelaysDAO {
 			throw new RuntimeException("Error Connection Database");
 		}
 	}
+	
+	public List<Rotta> getRotte(Map<Integer, Airport> idMapRotte, int distanza){
+		
+		List<Rotta> rotte = new ArrayList<Rotta>(); 
+		
+		String sql = "SELECT Distinct ORIGIN_AIRPORT_ID, DESTINATION_AIRPORT_ID, DISTANCE " + 
+		               "FROM flights " + 
+				       "WHERE DISTANCE >  ?"; 
+				//"ORDER BY distance ASC ";
+		
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, distanza);
+			ResultSet rs = st.executeQuery();
+
+			
+			while (rs.next()) {
+				Rotta r = new Rotta(idMapRotte.get(rs.getInt("ORIGIN_AIRPORT_ID")), 
+						idMapRotte.get(rs.getInt("DESTINATION_AIRPORT_ID")), rs.getInt("DISTANCE"));
+				rotte.add(r);
+			}
+
+			conn.close();
+			return rotte;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+		
+	}
+	
+	
 }
